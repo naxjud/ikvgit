@@ -9,13 +9,14 @@ try {
 	echo "test<br>";
   	$DBH = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
   	$DBH->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
- 
- 	echo "verbunden<br>";
+  	$DBH->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+
+
+ 	//echo "DB verbunden<br>";
 
 }
 catch(PDOException $e) {
-    echo "I'm sorry, Dave. I'm afraid I can't do that.";
-    echo $e->getMessage();
+    echo "Es gab einen Verbindungsfehler".$e->getMessage();
     file_put_contents('PDOErrors.txt', $e->getMessage(), FILE_APPEND);
 }
 
@@ -55,14 +56,26 @@ class Termin{
 	}
 
 	function termin_speichern($objTermin, $DBH){
-		//$cathy = new person('Cathy','9 Dark and Twisty','Cardiff');
-		# here's the fun part:
 
 		$STH = $DBH->prepare("INSERT INTO termine (id,VName,Beschreibung,Datum,ZeitVon,ZeitBis,RID,Ort,PID,GName,StID,ZName,Sprache,erstellt_am, freigegeben_am) 
 			values (:id,:VName,:Beschreibung,:Datum,:ZeitVon,:ZeitBis,:RID,:Ort,:PID,:GName,:StID,:ZName,:Sprache,:erstellt_am, :freigegeben_am)");
 
-		// :VName,:Beschreibung,:Datum,:ZeitVon,:ZeitBis,:RID,:Ort,:PID,:GName,:StID,:ZName,:Sprache,:erstellt_am, :freigegeben_am
-		//?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+		$STH->bindParam(":VName", $VName);
+		$STH->bindParam(":Beschreibung", $Beschreibung);
+		$STH->bindParam(":Datum", $Datum);
+		$STH->bindParam(":ZeitVon", $ZeitVon);
+		$STH->bindParam(":ZeitBis", $ZeitBis);
+		$STH->bindParam(":RID", $RID);
+		$STH->bindParam(":Ort", $Ort);
+		$STH->bindParam(":PID", $PID);
+		$STH->bindParam(":GName", $GName);
+		$STH->bindParam(":StID", $StID);
+		$STH->bindParam(":ZName", $ZName);
+		$STH->bindParam(":Sprache", $Sprache);
+		$STH->bindParam(":erstellt_am", $erstellt_am);
+		$STH->bindParam(":freigegeben_am", $freigegeben_am);
+	
+
 		$terminArr=(array)$objTermin;
 		echo "<pre>",print_r($terminArr),"</pre>";
 		$STH->execute($terminArr);
@@ -71,54 +84,61 @@ class Termin{
 
 }
 
+
+ini_set('date.timezone', 'Europe/Berlin');
+
 // $arrayName = array('id' => 1, 'VName' => "Tom");
 // echo "<pre>",print_r($arrayName),"</pre>";
+if($status==='saved'){
+	echo "Termin wurde erfolgreich gespeichert.";
+}
+if(isset($_POST) && substr($_SERVER['HTTP_REFERER'],-12)==='newevent.php')
+{
+	//echo "<br>calling page=".substr($_SERVER['HTTP_REFERER'],-12);
+	//echo "<pre>",print_r($_POST),"</pre>";
+	$VName		  	=	$_POST['VName'];
+	$Beschreibung 	=	$_POST['Beschreibung'];
+	$Datum		  	=	$_POST['Datum'];
+	$ZeitVon	  	=	$_POST['ZeitVon'];
+	$ZeitBis	  	=	$_POST['ZeitBis'];
+	$RID		  	=	$_POST['RID'];
+	$Ort		  	=	$_POST['Ort'];
+	$PID		  	=	$_POST['PID'];
+	$GName		  	=	$_POST['GName'];
+	$StID		  	=	$_POST['StID'];
+	$ZName		  	=	$_POST['ZName'];
+	$Sprache	  	=	$_POST['Sprache'];
+	$erstellt_am    =	date('H:i', gmdate('U'));
+	$freigegeben_am	=	NULL;
+
+	try{
+		$objTermin = new Termin($VName,$Beschreibung,$Datum,$ZeitVon,$ZeitBis,$RID,$Ort,$PID,$GName,$StID,$ZName,$Sprache,$erstellt_am,$freigegeben_am);
+		//echo "<pre>",print_r(array($objTermin)),"</pre>";
+		$objTermin->termin_speichern($objTermin, $DBH);
+		$status="saved";
+		header("Location: http://localhost/ikvem/index.php");
+		die();
+	}catch(PDOException $e){
+		echo "Es gab einen Fehler".$e->getMessage();
+	}
+
+}
 
 
-$objTermin = new Termin('TOM','Tag der Offenen Moschee','03.10.2015','14:30','17:30',1,'Mainz',1,'Beirat',2,'nicht muslime','Deutsch','01.12.2015', '01.12.2015');
-//echo "<pre>",print_r(array($objTermin)),"</pre>";
-$objTermin->termin_speichern($objTermin, $DBH);
 
+// # using the shortcut ->query() method here since there are no variable
+// # values in the select statement.
+// $STH = $DBH->query('SELECT * from gruppe');
 
-//public a simple object
-// class person {
-//     public $name;
-//     public $addr;
-//     public $city;
-//     function __construct($n,$a,$c) {
-//         $this->name = $n;
-//         $this->addr = $a;
-//         $this->city = $c;
-//     }
-//     # etc ...
+// # setting the fetch mode
+// $STH->setFetchMode(PDO::FETCH_ASSOC);
+ 
+// while($row = $STH->fetch()) {
+//     echo $row['id'] . "<br>";
+//     echo $row['Gruppe'] . "<br>";
 // }
- 
-// $cathy = new person('Cathy','9 Dark and Twisty','Cardiff');
- 
-// # here's the fun part:
-// $STH = $DBH->prepare("INSERT INTO folks (name, addr, city) value (:name, :addr, :city)");
-// $STH->execute((array)$cathy);
 
-
-
-
-
-
-
-
-	// # using the shortcut ->query() method here since there are no variable
-	// # values in the select statement.
-	// $STH = $DBH->query('SELECT * from gruppe');
-	
-	// # setting the fetch mode
-	// $STH->setFetchMode(PDO::FETCH_ASSOC);
-	 
-	// while($row = $STH->fetch()) {
-	//     echo $row['id'] . "<br>";
-	//     echo $row['Gruppe'] . "<br>";
-	// }
-
-	// echo ($DBH->lastInsertId());
+// echo ($DBH->lastInsertId());
 
 
 
